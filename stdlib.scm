@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-11 23:23:20 league>
+;;; Time-stamp: <2006-09-12 20:08:21 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -60,3 +60,12 @@
   (let ((p (open-output-string)))
     (display obj p)
     (get-output-string p)))
+
+(define (log2 n) (/ (log n) (log 2)))
+(define (ith i) (lambda (x) (list-ref x i)))
+
+(define (apply-to-cdr f)
+  (lambda (pair)
+    (cons (car pair) (f (cdr pair)))))
+(define (divide-by n)
+  (lambda (x) (/ x n)))

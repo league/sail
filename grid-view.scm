@@ -1,6 +1,6 @@
 ;;; grid-view.scm -- widgets that display grid worlds and inhabitants
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-11 23:23:20 league>
+;;; Time-stamp: <2006-09-12 20:08:07 league>
 
 (load "grid-model.scm")
 

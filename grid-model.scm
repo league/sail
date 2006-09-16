@@ -1,6 +1,6 @@
 ;;; grid-model.scm -- models representing grid worlds and inhabitants
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-11 23:23:20 league>
+;;; Time-stamp: <2006-09-12 20:08:04 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -65,14 +65,15 @@
 ;; a pretty dumb controller that goes south until it hits a boundary.
 (define controller-1 '(if s6 'north 'south))
 
+(define (prep-controller tree)
+  (eval (list 'lambda '(s1 s2 s3 s4 s5 s6 s7 s8) tree)))
+  
 ;; A room is modelled by a 2D vector of cells or walls (represented
 ;; just by #f).
 (define room-model%
   (class model%
     (public get-nrows get-ncols get-cell set-controller
             robot? place-robot take-one-step take-n-steps clear)
-    (define (prep-controller tree)
-      (eval (list 'lambda '(s1 s2 s3 s4 s5 s6 s7 s8) tree)))
     (init-field (template room-1)
                 (controller controller-1))
     (define control-fn (prep-controller controller))
