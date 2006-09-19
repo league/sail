@@ -23,39 +23,53 @@
                 dependents))
     (super-new)))
 
+;; Encapsulate a typical "for i = j to n" loop control structure.
 (define (for-loop from to body)
   (when (< from to)
     (body from)
     (for-loop (+ from 1) to body)))
 
+;; Build a vector of 'n' elements, initializing each element according
+;; to the results of the characteristic function 'f'.
 (define (vector-tabulate n each)
   (let ((v (make-vector n)))
     (for-loop 0 n (lambda (i) (vector-set! v i (each i))))
     v))
 
+;; This is just a for-each loop applied to vectors instead of lists.
 (define (vector-for-each v f)
   (for-loop 0 (vector-length v)
             (lambda (i) (f i (vector-ref v i)))))
 
+;; Build a vector of vectors ('r' rows by 'c' columns), initializing each
+;; element according to the results of the characteristic function 'f'.
 (define (vec2d-tabulate r c f)
   (vector-tabulate r (lambda (i)
                        (vector-tabulate c (lambda (j) (f i j))))))
 
+;; Apply 'f' to each of the elements of a vector of vectors, passing
+;; the indices i and j along with the element.  'f' is executed for
+;; effect only, any returned value is ignored.
 (define (vec2d-for-each matrix f)
   (vector-for-each matrix 
                    (lambda (i row)
                      (vector-for-each row (lambda (j elt)
                                             (f i j elt))))))
-(define (double-loop n k outer)
-  (for-loop 0 n (lambda (i) 
-                  (outer i (lambda (inner) 
-                             (for-loop 0 k inner))))))
 
+;(define (double-loop n k outer)
+;  (for-loop 0 n (lambda (i) 
+;                  (outer i (lambda (inner) 
+;                             (for-loop 0 k inner))))))
+
+;; Encapsulate a double for-loop control structure, where 'outer'
+;; occurs each time around the outer loop, and its result is passed 
+;; to 'inner' along with the indices i and j.
 (define (double-loop* n k outer inner)
   (for-loop 0 n (lambda (i)
                   (let ((r (outer i)))
                     (for-loop 0 k (lambda (j) (inner r i j)))))))
 
+;; Convert any object to a string representation, by way of a string port.
 (define (to-string obj)
   (let ((p (open-output-string)))
     (display obj p)
@@ -69,3 +83,10 @@
     (cons (car pair) (f (cdr pair)))))
 (define (divide-by n)
   (lambda (x) (/ x n)))
+(define (ith-eq? i v)
+  (lambda (entity)
+    (eq? (list-ref entity i) v)))
+
+(define (partial-apply proc . a1)
+  (lambda a2 (apply proc (append a1 a2))))
+
