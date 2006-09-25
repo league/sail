@@ -1,6 +1,6 @@
 ;;; id3tree.scm -- decision tree induction using Quinlan's ID3 algorithm
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-14 20:10:14 league>
+;;; Time-stamp: <2006-09-21 12:00:25 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -8,8 +8,14 @@
 (load "stdlib.scm")
 (require (lib "pregexp.ss"))
 
+(define (randomly-by p)
+  (lambda (entity) (< (random) p)))
+
 (define (csv->list fix text)
   (map fix (pregexp-split "," text)))
+
+(define (quoted-sym string)
+  (list 'quote (string->symbol string)))
 
 (define (read-lines convert inport)
   (let ((line (read-line inport)))
@@ -20,145 +26,144 @@
   (call-with-input-file filename
     (partial-apply read-lines (partial-apply csv->list string->symbol))))
 
-(define (parti predicate list)
+(define (histogram get data)
   (foldr (lambda (element accum)
-           (if (predicate element)
+           (let* ((value (get element))
+                  (binding (assoc value accum)))
+             (cond
+               ((pair? binding)
+                (set-cdr! binding (+ 1 (cdr binding)))
+                accum)
+               (else
+                (cons (cons value 1) accum)))))
+         null data))
+
+(define (entropy-term p)
+  (- (* p (log2 p))))
+
+(define (entropy data)
+  (let ((n (length data)))
+    (foldr (lambda (binding accum)
+             (+ accum (entropy-term (/ (cdr binding) n))))
+           0 (histogram (ith 0) data))))
+  
+(define (split test data)
+  (foldr (lambda (element accum)
+           (if (test element)
                (cons (cons element (car accum)) (cdr accum))
                (cons (car accum) (cons element (cdr accum)))))
          (cons null null)
-         list))
+         data))
 
-;;(define (entro data)
-;
-;;(define data 
-;;  (call-with-input-file "../agaricus-lepiota.data" ((read-lines csv->list)))
-;
-;;; Here are sample data by Peter Ross, from a document on data mining.
-;;; http://www.dcs.napier.ac.uk/~peter/vldb/dm/node11.html
-;;;   "You are stranded on a desert island and have no way to determine 
-;;;    which of the many types of fruit available are safe to eat. They 
-;;;    are of various colours and sizes, some have hairy skins and others 
-;;;    are smooth, some have hard flesh and others are soft. After a great 
-;;;    deal of stomach ache, you compile the following table."
-;;; The conclusion is the first (0th) element of each row.
-;(define examples
-;  '(('good   'hairy    'brown   'large   'hard)
-;    ('good   'hairy    'green   'large   'hard)
-;    ('bad    'smooth   'red     'large   'soft)
-;    ('good   'hairy    'green   'large   'soft)
-;    ('good   'hairy    'red     'small   'hard)
-;    ('good   'smooth   'red     'small   'hard)
-;    ('good   'smooth   'brown   'small   'hard)
-;    ('bad    'hairy    'green   'small   'soft)
-;    ('bad    'smooth   'green   'small   'hard)
-;    ('good   'hairy    'red     'large   'hard)
-;    ('good   'smooth   'brown   'large   'soft)
-;    ('bad    'smooth   'green   'small   'soft)
-;    ('good   'hairy    'red     'small   'soft)
-;    ('bad    'smooth   'red     'large   'hard)
-;    ('good   'smooth   'red     'small   'hard)
-;    ('bad    'hairy    'green   'small   'hard)))
-;
-;;; The names of the other attributes (1-4) are provided separately.
-;(define attributes
-;  '((skin . 1) (color . 2) (size . 3)  (flesh . 4)))
-;
-;(define (accum-alist data get init update)
-;  (let ((alist null))
-;    (for-each
-;     (lambda (entity)
-;       (let* ((key (get entity))
-;              (pair (assoc key alist)))
-;         (if pair
-;             (set-cdr! pair (update entity (cdr pair)))
-;             (set! alist (cons (cons key (init entity)) alist)))))
-;     data)
-;    alist))
-;
-;;; Partition a list of examples based on the value returned by 'get'.
-;(define (partition data get)
-;  (accum-alist data get list cons))
-;
-;(define (histogram data get)
-;  (accum-alist data get 
-;               (lambda (entity) 1)
-;               (lambda (entity n) (+ 1 n))))
-;
-;(define (a-priori-probs data get)
-;  (map (apply-to-cdr (divide-by (length data)))
-;       (histogram data get)))
-;
-;(define (sum-logs alist)
-;  (foldr (lambda (pair sum)
-;           (+ sum (* (cdr pair) (log2 (cdr pair)))))
-;         0 alist))
-;
-;(define (entropy-part get)
-;  (apply-to-cdr (lambda (data) (sum-logs (a-priori-probs data get)))))
-;
-;(define (entropy data get given)
-;  (let ((ps (a-priori-probs data given)))
-;    (foldr (lambda (binding sum) 
-;             (+ sum (* (cdr binding) (cdr (assoc (car binding) ps)))))
-;           0 (map (entropy-part get) (partition data given)))))           
-;
-;(define (each-attribute data attrs)
-;  (if (null? attrs) null
-;      (cons (cons (caar attrs) (entropy data (ith 0) (ith (cdar attrs))))
-;            (each-attribute data (cdr attrs)))))
-;
-;(define (best-of list)
-;  (best-of-helper (car list) (cdr list)))
-;
-;(define (best-of-helper best rest)
-;  (cond 
-;    ((null? rest) best)
-;    ((< (cdr best) (cdar rest)) 
-;     (best-of-helper (car rest) (cdr rest)))
-;    (else
-;     (best-of-helper best (cdr rest)))))
-;
-;(define (sym x) (list 'quote x))
-;
-;(define (assoc-rm key alist)
-;  (cond
-;    ((null? alist) null)
-;    ((equal? (caar alist) key) (cdr alist))
-;    (else (cons (car alist) (assoc-rm key (cdr alist))))))
-;                   
-;(define (make-branch data attrs)         
-;  (let* ((k (best-of (each-attribute data attrs)))
-;         (remaining (assoc-rm (car k) attrs))
-;         (each (lambda (binding tree)
-;                 (if (null? tree)
-;                     (build-tree (cdr binding) remaining)
-;                     (list 'if (cond
-;                                 ((eq? (car binding) #t) (car k))
-;                                 ((eq? (car binding) #f) (list 'not (car k)))
-;                                 (else (list 'eq? (car k) (car binding))))
-;                           (build-tree (cdr binding) remaining)
-;                           tree)))))
-;    (foldr each null (partition data (ith (cdr (assoc (car k) attrs)))))))
-;
-;(define (majority h)
-;  (foldr (lambda (pair best)
-;           (if (> (cdr pair) (cdr best))
-;               pair best))
-;         (car h)
-;         (cdr h)))
-;
-;(define (build-tree data attrs)
-;  (let ((h (histogram data (ith 0))))
-;    (cond
-;      ((= 1 (length h))
-;       (caar h))
-;      ((null? attrs)
-;       (car (majority h)))
-;      (else 
-;       (make-branch data attrs)))))
-;
-;(define tr (build-tree examples attributes))
-;(define fn (eval (list 'lambda '(skin color size flesh) tr)))
-;
-;(define not-ex '((#f 'a #t) (#f 'b #t) (#t 'b #f) (#t 'c #f)))
-;(define not-at '((s1 . 1) (s2 . 2)))
+(define (entropy-of-split test data)
+  (let* ((n (length data))
+         (p (split test data)))
+    (+ (* (/ (length (car p)) n) (entropy (car p)))
+       (* (/ (length (cdr p)) n) (entropy (cdr p))))))
+
+(define (tests-in-column i data)
+  (let ((h (histogram (ith i) data)))
+    (if (or (null? h) (null? (cdr h)))  
+        ;; if there are fewer than 2 values, no test is possible
+        null
+        (map (lambda (binding) (list i (car binding))) h))))
+
+(define (all-tests data)
+  (let ((n (length (car data)))
+        (ts null))
+    (for-loop 1 n (lambda (i) 
+                    (set! ts (append ts (tests-in-column i data)))))
+    ts))
+
+(define (choose-best-of data tests)
+  (foldr (lambda (test best)
+           (let ((e (entropy-of-split (apply ith-eq? test) data)))
+             (if (< e (car best))
+                 (cons e test)
+                 best)))
+         (cons 1 #f)
+         tests))
+
+(define (build-tree data names)
+  (let ((h (histogram (ith 0) data))
+        (ts (all-tests data)))
+    (cond
+      ((null? h) (error "data set is empty"))
+      ((null? (cdr h)) (list 'quote (caar h))) ; all elements classified same way
+      ((null? ts) (majority h))
+      (else
+       (let* ((t0 (cdr (choose-best-of data ts)))
+              (p (split (apply ith-eq? t0) data)))
+         (list 'if 
+               (list 'eqv? (list-ref names (car t0)) 
+                     (list 'quote (cadr t0)))
+               (build-tree (car p) names) 
+               (build-tree (cdr p) names)))))))
+
+(define (make-fn tree names)
+  (eval (list 'lambda names tree)))
+
+(define (test-tree tree data names)
+  (let ((fn (make-fn tree names)))
+    (/ (foldr (lambda (element score)
+                (if (eq? (apply fn element) (car element))
+                    (+ 1 score)
+                    score))
+              0 data)
+       (length data))))
+
+(define (tree-size tree)
+  (cond
+    ((and (pair? tree) (eq? (car tree) 'if))
+     (+ 1 (tree-size (caddr tree)) (tree-size (cadddr tree))))
+    (else 0)))
+
+(define (accuracy-with ratio data)
+  (let* ((p (split (randomly-by ratio) data))
+         (train (car p))
+         (test (cdr p))
+         (tree (build-tree train shroom-names)))
+    (printf "~s examples, ~s nodes~n" (length train) (tree-size tree))
+    (exact->inexact (test-tree tree test shroom-names))))
+
+;(define data (read-csv "shrooms.data"))
+;(define tr (build-tree data shroom-names))
+;(define fn (make-fn tr shroom-names))
+
+(define shroom-names
+  '(classification           ; edible=e,poisonous=p
+    cap-shape                ; bell=b,conical=c,convex=x,flat=f,
+                             ; knobbed=k,sunken=s
+    cap-surface              ; fibrous=f,grooves=g,scaly=y,smooth=s
+    cap-color                ; brown=n,buff=b,cinnamon=c,gray=g,green=r,
+                             ; pink=p,purple=u,red=e,white=w,yellow=y
+    bruises?                 ; bruises=t,no=f
+    odor                     ; almond=a,anise=l,creosote=c,fishy=y,foul=f,
+                             ; musty=m,none=n,pungent=p,spicy=s
+    gill-attachment          ; attached=a,descending=d,free=f,notched=n
+    gill-spacing             ; close=c,crowded=w,distant=d
+    gill-size                ; broad=b,narrow=n
+    gill-color               ; black=k,brown=n,buff=b,chocolate=h,gray=g,
+                             ; green=r,orange=o,pink=p,purple=u,red=e,
+                             ; white=w,yellow=y
+    stalk-shape              ; enlarging=e,tapering=t
+    stalk-root               ; bulbous=b,club=c,cup=u,equal=e,
+                             ; rhizomorphs=z,rooted=r,missing=?
+    stalk-surface-above-ring ; ibrous=f,scaly=y,silky=k,smooth=s
+    stalk-surface-below-ring ; ibrous=f,scaly=y,silky=k,smooth=s
+    stalk-color-above-ring   ; brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+                             ; pink=p,red=e,white=w,yellow=y
+    stalk-color-below-ring   ; brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+                             ; pink=p,red=e,white=w,yellow=y
+    veil-type                ; partial=p,universal=u
+    veil-color               ; brown=n,orange=o,white=w,yellow=y
+    ring-number              ; none=n,one=o,two=t
+    ring-type                ; cobwebby=c,evanescent=e,flaring=f,large=l,
+                             ; none=n,pendant=p,sheathing=s,zone=z
+    spore-print-color        ; black=k,brown=n,buff=b,chocolate=h,green=r,
+                             ; orange=o,purple=u,white=w,yellow=y
+    population               ; abundant=a,clustered=c,numerous=n,
+                             ; scattered=s,several=v,solitary=y
+    habitat                  ; grasses=g,leaves=l,meadows=m,paths=p,
+                             ; urban=u,waste=w,woods=d
+    ))

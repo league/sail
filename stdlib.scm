@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-12 20:08:21 league>
+;;; Time-stamp: <2006-09-21 12:00:18 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -28,6 +28,10 @@
   (when (< from to)
     (body from)
     (for-loop (+ from 1) to body)))
+
+(define (repeat n each)
+  (if (= n 0) null
+      (cons (each) (repeat (- n 1) each))))
 
 ;; Build a vector of 'n' elements, initializing each element according
 ;; to the results of the characteristic function 'f'.
