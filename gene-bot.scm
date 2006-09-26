@@ -1,4 +1,4 @@
-(load "geneprog.scm")
+(load "gene-prog.scm")
 (load "grid-view.scm")
 
 (define room-0

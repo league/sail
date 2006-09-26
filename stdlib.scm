@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-21 12:00:18 league>
+;;; Time-stamp: <2006-09-26 12:17:28 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -29,6 +29,7 @@
     (body from)
     (for-loop (+ from 1) to body)))
 
+;; Collect the results of (each), called n times.
 (define (repeat n each)
   (if (= n 0) null
       (cons (each) (repeat (- n 1) each))))
@@ -44,6 +45,12 @@
 (define (vector-for-each v f)
   (for-loop 0 (vector-length v)
             (lambda (i) (f i (vector-ref v i)))))
+
+(define (vector-foldr f z v)
+  (let ((acc z))
+    (for-loop 0 (vector-length v)
+              (lambda (i) (set! acc (f i (vector-ref v i) acc))))
+    acc))
 
 ;; Build a vector of vectors ('r' rows by 'c' columns), initializing each
 ;; element according to the results of the characteristic function 'f'.
