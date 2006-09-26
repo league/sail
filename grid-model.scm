@@ -72,7 +72,8 @@
 ;; just by #f).
 (define room-model%
   (class model%
-    (public get-nrows get-ncols get-cell set-controller
+    (public get-nrows get-ncols get-cell set-controller 
+            count-wall-cells-visited measure-fitness set-fn
             robot? place-robot take-one-step take-n-steps clear)
     (init-field (template room-1)
                 (controller controller-1))
@@ -98,6 +99,8 @@
     (define (set-controller tree) 
       (set! controller tree)
       (set! control-fn (prep-controller tree)))
+    (define (set-fn f)
+      (set! control-fn f))
     (define (remove-robot)
       (cond
         (botr (send (get-cell botr botc) clear)
@@ -110,8 +113,14 @@
               (send cm place-robot)
               (set! botr r)
               (set! botc c)
-              (send this changed))
-          (else (error "Attempt to place robot in wall:" r c)))))
+              (send this changed)))))
+;;          (else (error "Attempt to place robot in wall:" r c)))))
+    (define (place-robot-randomly)
+      (let* ((r (random nrows))
+             (c (random ncols))
+             (cm (get-cell r c)))
+        (if cm (place-robot r c)
+            (place-robot-randomly))))               
     (define (move-robot dir)
       (cond
         (botr 
@@ -144,5 +153,35 @@
         (else (error "There is no robot here to move"))))
     (define (take-n-steps n)
       (for-loop 0 n (lambda (i) (send this take-one-step))))
+    (define (count-wall-cells-visited)
+      (let ((n 0))
+        (vec2d-for-each 
+         cells
+         (lambda (i j elt)
+           (when (and elt
+                      (or (send elt robot?) (send elt get-direction))
+                      (> i 0) (> j 0)
+                      (< i (- nrows 1))
+                      (< j (- ncols 1))
+                      (or (not (get-cell (- i 1) (- j 1)))
+                          (not (get-cell (- i 1)    j   ))
+                          (not (get-cell (- i 1) (+ j 1)))
+                          (not (get-cell    i    (+ j 1)))
+                          (not (get-cell (+ i 1) (+ j 1)))
+                          (not (get-cell (+ i 1)    j   ))
+                          (not (get-cell (+ i 1) (- j 1)))
+                          (not (get-cell    i    (- j 1)))))
+             (set! n (+ n 1)))))
+        n))
+    (define (measure-fitness repetitions steps)
+      (let ((score 0))
+        (for-loop 
+         0 repetitions
+         (lambda (i)
+           (clear)
+           (place-robot-randomly)
+           (take-n-steps steps)
+           (set! score (+ score (count-wall-cells-visited)))))
+        score))      
     (super-new)))
 
