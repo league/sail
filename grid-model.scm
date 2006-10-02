@@ -65,26 +65,22 @@
 ;; a pretty dumb controller that goes south until it hits a boundary.
 (define controller-1 '(if s6 'north 'south))
 
-(define (prep-controller tree)
-  (eval (list 'lambda '(s1 s2 s3 s4 s5 s6 s7 s8) tree)))
-  
 ;; A room is modelled by a 2D vector of cells or walls (represented
 ;; just by #f).
 (define room-model%
   (class model%
     (public get-nrows get-ncols get-cell set-controller 
-            count-wall-cells-visited measure-fitness set-fn
+            count-wall-cells-visited measure-fitness
             robot? place-robot take-one-step take-n-steps clear)
     (init-field (template room-1)
                 (controller controller-1))
-    (define control-fn (prep-controller controller))
     (define lastr (+ 1 (length template)))              ; last row
     (define lastc (+ 1 (string-length (car template)))) ; last column
     (define nrows (+ 1 lastr))
     (define ncols (+ 1 lastc))
     (define botr #f)    ; position of the robot (if applicable)
     (define botc #f)
-    (define (robot?) (if botr #t #f))
+    (define (robot?) (if botr #t #f))  ; is the robot on the board?
     (define (cell-from-tmpl r c)
       (if (and (> r 0) (> c 0) (< r lastr) (< c lastc)
                (let* ((row (list-ref template (- r 1)))
@@ -97,10 +93,7 @@
     (define (get-ncols) ncols)
     (define (get-cell r c) (vector-ref (vector-ref cells r) c))
     (define (set-controller tree) 
-      (set! controller tree)
-      (set! control-fn (prep-controller tree)))
-    (define (set-fn f)
-      (set! control-fn f))
+      (set! controller tree))
     (define (remove-robot)
       (cond
         (botr (send (get-cell botr botc) clear)
@@ -149,8 +142,53 @@
                (s6 (not (get-cell (+ botr 1)    botc   )))
                (s7 (not (get-cell (+ botr 1) (- botc 1))))
                (s8 (not (get-cell    botr    (- botc 1)))))
-           (move-robot (apply control-fn (list s1 s2 s3 s4 s5 s6 s7 s8)))))
+           (move-robot (interpret-tree controller 
+                                       (list s1 s2 s3 s4 s5 s6 s7 s8)
+                                       (lambda (x) x)))))
         (else (error "There is no robot here to move"))))
+    ;; Why write a tree interpreter, rather than just use eval?  For 
+    ;; genetic programming, it's convenient to permit the directions 
+    ;; to occur anywhere, as in (if (or s3 north) (if south west s3)).
+    ;; This tree doesn't really make much sense as something you'd 
+    ;; program, but this interpreter will just use the first direction
+    ;; encountered while evaluating.  It uses a continuation trick
+    ;; so that at any time it can return a direction to the top level.
+    (define (interpret-tree tr sens cont)
+      (cond
+        ((pair? tr)
+         (case (car tr)
+           ('not (interpret-tree
+                  (cadr tr) sens
+                  (lambda (x) (cont (not x)))))
+           ('and (interpret-tree
+                  (cadr tr) sens
+                  (lambda (x1)
+                    (if x1
+                        (interpret-tree (caddr tr) sens cont)
+                        (cont #f)))))
+           ('or (interpret-tree
+                 (cadr tr) sens
+                 (lambda (x1)
+                   (if x1
+                       (cont #t)
+                       (interpret-tree (caddr tr) sens cont)))))
+           ('if (interpret-tree
+                 (cadr tr) sens
+                 (lambda (x1)
+                   (if x1
+                       (interpret-tree (caddr tr) sens cont)
+                       (interpret-tree (cadddr tr) sens cont)))))))
+        (else
+         (case tr
+           ('s1 (cont (list-ref sens 0)))
+           ('s2 (cont (list-ref sens 1)))
+           ('s3 (cont (list-ref sens 2)))
+           ('s4 (cont (list-ref sens 3)))
+           ('s5 (cont (list-ref sens 4)))
+           ('s6 (cont (list-ref sens 5)))
+           ('s7 (cont (list-ref sens 6)))
+           ('s8 (cont (list-ref sens 7)))
+           (else tr)))))
     (define (take-n-steps n)
       (for-loop 0 n (lambda (i) (send this take-one-step))))
     (define (count-wall-cells-visited)
@@ -184,4 +222,3 @@
            (set! score (+ score (count-wall-cells-visited)))))
         score))      
     (super-new)))
-

@@ -1,94 +1,63 @@
-(load "gene-prog.scm")
+;;; gene-bot.scm -- a genetic algorithm to build a wall-following robot
+;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
+;;; Time-stamp: <2006-09-26 12:36:15 league>
+
+(load "gene-tree.scm")
 (load "grid-view.scm")
 
 (define room-0
-  '("     "
-    "     "
-    "     "
-    "     "))
+  '("        "
+    "        "
+    "        "
+    "        "))
 
-(define the-room room-1)
+(define genetic-robot-algo%
+  (class genetic-tree-algo%
+    (override create-leaf create-branch evaluate)
+    (init-field (template room-0))
+    (define room (new room-model% (template template)))
+    (define (choose-from v)
+      (vector-ref v (random (vector-length v))))
+    (define (create-leaf)
+      (choose-from #(s1 s2 s3 s4 s5 s6 s7 s8 north south east west)))
+    (define (create-branch h)
+      (case (random 4)
+        ('0 (list 'if 
+                  (send this create-tree h) 
+                  (send this create-tree h)
+                  (send this create-tree h)))
+        ('1 (list 'and 
+                  (send this create-tree h)
+                  (send this create-tree h)))
+        ('2 (list 'or 
+                  (send this create-tree h) 
+                  (send this create-tree h)))
+        ('3 (list 'not (send this create-tree h)))))
+    (define (evaluate tr)
+      (send room set-controller tr)
+      (- (send room measure-fitness 8 60)
+         (round (log2 (tree-size tr)))))
+    (super-new)))
 
-(define vis-room (open-world the-room))
-(define bot-room (new room-model% (template the-room)))
+(define ga-robot-view%
+  (class ga-text-view%
+    (override update)
+    (init-field (template room-0)
+                (room (new room-model% (template template))))
+    (define frame (new grid-world-frame% (room room)))
+    (define (update . args)
+      (super update . args)
+      (when (and (pair? args) (eq? (car args) 'finish))
+        (let ((bot (car (send (get-field ga this) best))))
+          (send room set-controller bot)
+          (send room clear)
+          (printf "installing best bot:~n  ~v~n" bot))))
+    (super-new (ga (new genetic-robot-algo% (template template))))
+    (send frame show #t)))
 
-(define bot-leaves
-  '(s1 s2 s3 s4 s5 s6 s7 s8 north south east west))
+(define (new-robot-ga room)
+  (let ((gv (new ga-robot-view% (template room))))
+    (get-field ga gv)))
 
-(define bot-ops
-  '((if . 3) (and . 2) (or . 2) (not . 1)))
+;(define ga (new-robot-ga room-0))
 
-(define (interpret-tree tr sensors ret cont)
-  (cond
-    ((pair? tr)
-     (case (car tr)
-       ('not (interpret-tree 
-              (cadr tr) sensors ret 
-              (lambda (x) (cont (not x)))))
-       ('and (interpret-tree
-              (cadr tr) sensors ret
-              (lambda (x1)
-                (if x1 
-                    (interpret-tree (caddr tr) sensors ret cont)
-                    (cont #f)))))
-       ('or (interpret-tree
-             (cadr tr) sensors ret
-             (lambda (x1)
-               (if x1
-                   (cont #t)
-                   (interpret-tree (caddr tr) sensors ret cont)))))
-       ('if (interpret-tree
-             (cadr tr) sensors ret
-             (lambda (x1)
-               (if x1
-                   (interpret-tree (caddr tr) sensors ret cont)
-                   (interpret-tree (cadddr tr) sensors ret cont)))))))
-    (else
-     (case tr
-       ('s1 (cont (list-ref sensors 0)))
-       ('s2 (cont (list-ref sensors 1)))
-       ('s3 (cont (list-ref sensors 2)))
-       ('s4 (cont (list-ref sensors 3)))
-       ('s5 (cont (list-ref sensors 4)))
-       ('s6 (cont (list-ref sensors 5)))
-       ('s7 (cont (list-ref sensors 6)))
-       ('s8 (cont (list-ref sensors 7)))
-       ('north (ret 'north))
-       ('south (ret 'south))
-       ('east (ret 'east))
-       ('west (ret 'west))))))
-
-(define (bot-make-fn tree)
-  (lambda (s1 s2 s3 s4 s5 s6 s7 s8)
-    (interpret-tree tree (list s1 s2 s3 s4 s5 s6 s7 s8) I I)))
-
-;(define (bot-fix-controller tr)
-;  (cond
-;    ((pair? tr) (map bot-fix-controller tr))
-;    ((eqv? tr 'north) ''north)
-;    ((eqv? tr 'south) ''south)
-;    ((eqv? tr 'east) ''east)
-;    ((eqv? tr 'west) ''west)
-;    (else tr)))
-
-(define (bot-fitness ctrl)
-  (send bot-room set-fn (bot-make-fn ctrl))
-  (send bot-room measure-fitness 10 60))
-
-(define (install-best-bot)
-  (let ((ctrl (car (best-of CURRENT_POP))))
-    (send vis-room set-fn (bot-make-fn ctrl))
-    ctrl))
-
-(define bot-gp 
-  (make-genetic-program bot-leaves bot-ops bot-fitness))
-
-(define (start)
-  (genesis bot-gp)
-  (install-best-bot))
-
-(define (next k)
-  (run-gens bot-gp k)
-  (install-best-bot))
-
-;(start)

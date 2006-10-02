@@ -1,6 +1,6 @@
 ;;; gene-tree.scm -- genetic algorithms applied to tree structures
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-26 12:42:57 league>
+;;; Time-stamp: <2006-09-26 15:31:24 league>
 
 (load "gene-algo.scm")
 
@@ -23,20 +23,22 @@
 (define genetic-tree-algo%
   (class genetic-algo%
     (override create mutate crossover evaluate)
-    (public create-leaf create-tree)
-    (init-field (initial-height-limit 3)
+    (public create-leaf create-branch create-tree)
+    (init-field (initial-height-limit 4)
                 (leaf-probability .5))
     (define (create-leaf)
       (random 10))
+    (define (create-branch h)
+      (case (random 3)
+        ('0 (list '+ (create-tree h) (create-tree h)))
+        ('1 (list '- (create-tree h) (create-tree h)))
+        ('2 (list '* (create-tree h) (create-tree h)))))
     (define (create-tree ht)
       (let ((h (- ht 1)))
         (if (or (= h 0)
                 (<= (random) leaf-probability))
             (create-leaf)
-            (case (random 3)
-              ('0 (list '+ (create-tree h) (create-tree h)))
-              ('1 (list '- (create-tree h) (create-tree h)))
-              ('2 (list '* (create-tree h) (create-tree h)))))))
+            (create-branch h))))
     (define (create)
       (create-tree initial-height-limit))
     ;; To mutate, replace a random subtree with a newly created one.
