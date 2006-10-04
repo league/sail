@@ -69,11 +69,14 @@
 ;; just by #f).
 (define room-model%
   (class model%
-    (public get-nrows get-ncols get-cell set-controller 
+    (public get-nrows get-ncols get-cell set-controller set-fn
             count-wall-cells-visited measure-fitness
             robot? place-robot take-one-step take-n-steps clear)
     (init-field (template room-1)
                 (controller controller-1))
+    (define botfn #f)
+    (define state #f)
+    (define (set-fn f) (set! botfn f))
     (define lastr (+ 1 (length template)))              ; last row
     (define lastc (+ 1 (string-length (car template)))) ; last column
     (define nrows (+ 1 lastr))
@@ -130,21 +133,26 @@
                               (when elt (send elt clear))))
       (set! botr #f)
       (set! botc #f)
+      (set! state #f)
       (send this changed))
     (define (take-one-step)
       (cond
         (botr
-         (let ((s1 (not (get-cell (- botr 1) (- botc 1))))
-               (s2 (not (get-cell (- botr 1)    botc   )))
-               (s3 (not (get-cell (- botr 1) (+ botc 1))))
-               (s4 (not (get-cell    botr    (+ botc 1))))
-               (s5 (not (get-cell (+ botr 1) (+ botc 1))))
-               (s6 (not (get-cell (+ botr 1)    botc   )))
-               (s7 (not (get-cell (+ botr 1) (- botc 1))))
-               (s8 (not (get-cell    botr    (- botc 1)))))
-           (move-robot (interpret-tree controller 
-                                       (list s1 s2 s3 s4 s5 s6 s7 s8)
-                                       (lambda (x) x)))))
+         (let* ((s1 (not (get-cell (- botr 1) (- botc 1))))
+                (s2 (not (get-cell (- botr 1)    botc   )))
+                (s3 (not (get-cell (- botr 1) (+ botc 1))))
+                (s4 (not (get-cell    botr    (+ botc 1))))
+                (s5 (not (get-cell (+ botr 1) (+ botc 1))))
+                (s6 (not (get-cell (+ botr 1)    botc   )))
+                (s7 (not (get-cell (+ botr 1) (- botc 1))))
+                (s8 (not (get-cell    botr    (- botc 1))))
+                (sensors (list s1 s2 s3 s4 s5 s6 s7 s8)))
+           (if botfn
+               (let ((r (botfn sensors state)))
+                 (set! state (cdr r))
+                 (move-robot (car r)))
+               (move-robot (interpret-tree controller sensors 
+                                           (lambda (x) x))))))
         (else (error "There is no robot here to move"))))
     ;; Why write a tree interpreter, rather than just use eval?  For 
     ;; genetic programming, it's convenient to permit the directions 
