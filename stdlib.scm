@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-09-26 12:17:28 league>
+;;; Time-stamp: <2006-10-09 23:49:30 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -101,3 +101,30 @@
 (define (partial-apply proc . a1)
   (lambda a2 (apply proc (append a1 a2))))
 
+;; A dirt-simple representation of a stack using a list.
+(define stack%
+  (class object%
+    (public initial empty? push peek pop)
+    (define (initial) null)
+    (define (empty? s) (null? s))
+    (define (push x s) (cons x s))
+    (define (peek s) (car s))
+    (define (pop s) (cdr s))
+    (super-new)))
+
+;; A functional queue implementation (as described by Chris Okasaki).
+(define queue%
+  (class object%
+    (public initial empty? push peek pop)
+    (define (initial) (cons null null))
+    (define (empty? q) (null? (car q)))
+    (define (push x q)
+      (if (null? (car q))
+          (cons (cons x (car q)) (cdr q))
+          (cons (car q) (cons x (cdr q)))))
+    (define (peek q) (caar q))
+    (define (pop q)
+      (if (null? (cdar q))
+          (cons (reverse (cdr q)) null)
+          (cons (cdar q) (cdr q))))
+    (super-new)))
