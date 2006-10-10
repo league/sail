@@ -1,4 +1,15 @@
+;;; sets.scm -- sets represented as lists, with user-specified equality
+;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
+;;; Time-stamp: <2006-10-10 09:50:10 league>
+
+;;; This is free software; you may copy, distribute and modify it under the
+;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
+
 (define empty-set null)
+
+;; The functions starting with colons (:) are meant to be private.
+;; They take explicit equality predicates.  The public versions are
+;; defined at the bottom, where the equality is made optional.
 
 (define (:element-of? x s eq)
   (if (null? s) #f

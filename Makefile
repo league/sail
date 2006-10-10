@@ -11,3 +11,7 @@ genetic.zip: gene-knapsack.scm gene-vec.scm gene-algo.scm stdlib.scm \
 
 roomba.zip: state-bot.scm grid-view.scm grid-model.scm stdlib.scm
 	zip $@ $^
+
+search.zip: search-bot.scm grid-view.scm grid-model.scm stdlib.scm \
+	search-graph.scm sets.scm search-blocks.scm search-river.scm
+	zip $@ $^
