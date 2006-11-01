@@ -1,6 +1,6 @@
 ;;; sets.scm -- sets represented as lists, with user-specified equality
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-10-10 09:50:10 league>
+;;; Time-stamp: <2006-11-01 11:51:23 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -44,6 +44,9 @@
   (and (:subset? s t eq)
        (:subset? t s eq)))
 
+(define (:union s t eq)
+  (foldr (lambda (x u) (:add-to-set x u eq)) s t))
+
 (define (optional-eq f)  
   (lambda args
     (if (< (length args) (procedure-arity f))
@@ -57,3 +60,4 @@
 (define remove-from-set* (optional-eq :remove-from-set*))
 (define subset?          (optional-eq :subset?))
 (define set=?            (optional-eq :set=?))
+(define union            (optional-eq :union))

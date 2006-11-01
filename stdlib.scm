@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-10-09 23:49:30 league>
+;;; Time-stamp: <2006-11-01 11:51:09 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
@@ -67,11 +67,6 @@
                      (vector-for-each row (lambda (j elt)
                                             (f i j elt))))))
 
-;(define (double-loop n k outer)
-;  (for-loop 0 n (lambda (i) 
-;                  (outer i (lambda (inner) 
-;                             (for-loop 0 k inner))))))
-
 ;; Encapsulate a double for-loop control structure, where 'outer'
 ;; occurs each time around the outer loop, and its result is passed 
 ;; to 'inner' along with the indices i and j.
@@ -88,6 +83,7 @@
 
 (define (log2 n) (/ (log n) (log 2)))
 (define (ith i) (lambda (x) (list-ref x i)))
+(define (square x) (* x x))
 
 (define (apply-to-cdr f)
   (lambda (pair)
@@ -101,21 +97,29 @@
 (define (partial-apply proc . a1)
   (lambda a2 (apply proc (append a1 a2))))
 
+(define (assoc-update key alist val)
+  (cond
+    ((null? alist) (list (cons key val)))
+    ((equal? key (caar alist)) (cons (cons key val) (cdr alist)))
+    (else (cons (car alist) (assoc-update key (cdr alist) val)))))
+
 ;; A dirt-simple representation of a stack using a list.
 (define stack%
   (class object%
-    (public initial empty? push peek pop)
+    (public initial empty? push peek pop find)
     (define (initial) null)
     (define (empty? s) (null? s))
     (define (push x s) (cons x s))
     (define (peek s) (car s))
     (define (pop s) (cdr s))
+    (define (find f s)
+      (findf f s))
     (super-new)))
 
 ;; A functional queue implementation (as described by Chris Okasaki).
 (define queue%
   (class object%
-    (public initial empty? push peek pop)
+    (public initial empty? push peek pop find)
     (define (initial) (cons null null))
     (define (empty? q) (null? (car q)))
     (define (push x q)
@@ -127,4 +131,7 @@
       (if (null? (cdar q))
           (cons (reverse (cdr q)) null)
           (cons (cdar q) (cdr q))))
+    (define (find f q)
+      (or (findf f (car q))
+          (findf f (cdr q))))
     (super-new)))

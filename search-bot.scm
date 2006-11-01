@@ -120,5 +120,17 @@
     (when dir (record-movement dir state))
     (cons dir state)))
 
-(define w (open-world room-2))
+(define room-3
+  '("          xx  "
+    "xxxxx xxx    x"
+    "         xxxxx"
+    "          xx  "
+    "xxxxx xxx    x"
+    "    x    xxxxx"
+    "    x     xx  "
+    "xx xx xxx    x"
+    " x  x     xxxx"
+    "      x x     "))
+
+(define w (open-world room-3))
 (send w set-fn bot-fn)
