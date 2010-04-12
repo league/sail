@@ -1,11 +1,11 @@
-;;; connect4-view.scm -- the graphics and user interface
+;;; c4view.scm -- the graphics and user interface
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-10-10 15:33:41 league>
+;;; Time-stamp: <2006-11-13 11:46:30 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
 
-(load "connect4-model.scm")
+(load "c4model.scm")
 
 ;; Displays a cell in the Connect-4 grid as a small square canvas. Marked
 ;; cells show a heavy ring around them.
@@ -28,8 +28,7 @@
         (send dc set-brush c 'solid)
         (send dc draw-ellipse 4 4 (- w 9) (- h 9))
         (when (> n 0)
-          (send dc draw-text (number->string n)
-                (/ w 2) (/ h 2)))))
+          (send dc draw-text (number->string n) 12 12))))
     (super-new (min-width 48) (min-height 48)
                (paint-callback paint-cell))
     (send this set-canvas-background *board-color*)
@@ -88,10 +87,8 @@
                          (string-append *p1-label* "'s turn")
                          (string-append *p2-label* "'s turn")))))
              (st2 (if heuristic
-                      (string-append 
-                       st1 ": "
-                       (number->string 
-                        (heuristic (other-player p) (send game extract))))
+                      (number->string 
+                       (heuristic (send game extract)))
                       st1)))
         (send msg set-label st2)
         (send un enable (send game can-undo?))

@@ -1,6 +1,6 @@
-;;; connect4-model.scm -- the underlying game-playing engine
+;;; c4model.scm -- the underlying game-playing engine
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-10-10 15:33:41 league>
+;;; Time-stamp: <2006-11-13 11:46:26 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.
