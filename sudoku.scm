@@ -152,13 +152,68 @@
     (super-new)
     (set! rows (vector-tabulate (get-field nn puz) each-row))))
 
+(define sudoku-controls%
+  (class ac3controls%
+    (super-new)
+    (define (set-row puz r vs)
+      (foldl (lambda (v i)
+               (when v
+                 (send puz set-domain-of (cons r i) (list v)))
+               (+ 1 i))
+             1 vs))        
+    ;; a few hard-coded puzzles from websudoku.com, until I learn to generate.
+    ;; Easy Puzzle 1,660,624,960
+    (define (easy b e)
+      (let ((puz (get-field m this)))
+        (send puz reset)
+        (set-row puz 1 '(#f #f #f  #f #f #f   9  1 #f))
+        (set-row puz 2 '(#f  6 #f   2 #f #f  #f  3 #f))
+        (set-row puz 3 '( 8  3 #f   6  7  1   4  5 #f))
+        (set-row puz 4 '(#f #f #f  #f #f  9  #f #f  8))
+        (set-row puz 5 '( 4 #f #f   1  2  5  #f #f  9))
+        (set-row puz 6 '( 2 #f #f   7 #f #f  #f #f #f))
+        (set-row puz 7 '(#f  2  8   4  5  7  #f  9  3))
+        (set-row puz 8 '(#f  7 #f  #f #f  3  #f  2 #f))
+        (set-row puz 9 '(#f  5  4  #f #f #f  #f #f #f))))
+    ;; Medium Puzzle 238,363,500
+    (define (medium b e)
+      (let ((puz (get-field m this)))
+        (send puz reset)
+        (set-row puz 1 '(#f #f  2  #f #f  4  #f  9 #f))
+        (set-row puz 2 '(#f #f  5  #f #f  3   6 #f #f))
+        (set-row puz 3 '( 3 #f #f  #f  7 #f  #f  2  5))
+        (set-row puz 4 '(#f #f #f   4 #f #f   1 #f #f))
+        (set-row puz 5 '( 4 #f  6   5 #f  1   8 #f  9))
+        (set-row puz 6 '(#f #f  8  #f #f  2  #f #f #f))
+        (set-row puz 7 '( 8  9 #f  #f  1 #f  #f #f  6))
+        (set-row puz 8 '(#f #f  3   8 #f #f   9 #f #f))
+        (set-row puz 9 '(#f  6 #f   2 #f #f   7 #f #f))))
+    ;; Evil Puzzle 6,017,119,400
+    (define (evil b e)
+      (let ((puz (get-field m this)))
+        (send puz reset)
+        (set-row puz 1 '(#f  5 #f   9 #f  4   6  3 #f))
+        (set-row puz 2 '(#f #f  9  #f #f #f  #f #f #f))
+        (set-row puz 3 '( 3 #f #f  #f  5 #f   7 #f #f))
+        (set-row puz 4 '( 4 #f  1  #f #f #f  #f  7 #f))
+        (set-row puz 5 '(#f #f #f   3 #f  8  #f #f #f))
+        (set-row puz 6 '(#f  3 #f  #f #f #f   2 #f  5))
+        (set-row puz 7 '(#f #f  4  #f  1 #f  #f #f  6))
+        (set-row puz 8 '(#f #f #f  #f #f #f   9 #f #f))
+        (set-row puz 9 '(#f  8  2   5 #f  7  #f  4 #f))))
+        
+    (new button% (label "Easy") (parent this) (callback easy))
+    (new button% (label "Medium") (parent this) (callback medium))
+    (new button% (label "Evil") (parent this) (callback evil))))
+  
+  
 (define sudoku-frame%
   (class frame%
     (init-field (n 3) (puz (new sudoku% (n n))))
     (super-new (label "Sudoku"))
     (define h (new horizontal-pane% (parent this)))
     (new sudoku-grid-view% (puz puz) (parent h))
-    (new ac3controls% (m puz) (parent h))))
+    (new sudoku-controls% (m puz) (parent h))))
 
 (define fr (new sudoku-frame%))
 (define p (get-field puz fr))
