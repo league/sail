@@ -18,3 +18,6 @@ search.zip: search-bot.scm grid-view.scm grid-model.scm stdlib.scm \
 
 constraints.zip: sudoku.scm ac3algo.scm stdlib.scm sets.scm n-queens.scm
 	zip $@ $^
+
+connect4.zip: c4minimax.scm c4view.scm c4model.scm stdlib.scm
+	zip $@ $^

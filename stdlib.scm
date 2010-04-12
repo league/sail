@@ -1,6 +1,6 @@
 ;;; stdlib.scm -- some general-purpose helper functions
 ;;; Copyright 2006 by Christopher League <league@contrapunctus.net>
-;;; Time-stamp: <2006-11-01 11:51:09 league>
+;;; Time-stamp: <2006-11-13 11:46:21 league>
 
 ;;; This is free software; you may copy, distribute and modify it under the
 ;;; terms of the GNU General Public License, but it comes with NO WARRANTY.

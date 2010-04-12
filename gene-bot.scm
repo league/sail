@@ -59,5 +59,5 @@
   (let ((gv (new ga-robot-view% (template room))))
     (get-field ga gv)))
 
-;(define ga (new-robot-ga room-0))
+(define ga (new-robot-ga room-0))
 
